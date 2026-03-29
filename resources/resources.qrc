@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>icons/placeholder.png</file>
+        <file>icons/app.ico</file>
+        <file>Alphazet-Light.ttf</file>
+    </qresource>
+</RCC>

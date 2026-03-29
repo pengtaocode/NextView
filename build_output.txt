@@ -1,0 +1,134 @@
+Starting configure...
+-- The CXX compiler identification is MSVC 19.44.35213.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not found
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - not found
+-- Found Threads: TRUE
+-- Performing Test HAVE_STDATOMIC
+-- Performing Test HAVE_STDATOMIC - Success
+-- Found WrapAtomic: TRUE
+-- Could NOT find WrapVulkanHeaders (missing: Vulkan_INCLUDE_DIR) 
+-- Configuring done (2.8s)
+-- Generating done (0.2s)
+-- Build files have been written to: C:/Users/20274/Documents/NextView/build
+CONFIGURE_OK
+[1/22] Automatic MOC and UIC for target NextView
+[2/22] Automatic RCC for resources/resources.qrc
+[3/22] Building CXX object CMakeFiles\NextView.dir\src\Models\ProjectManager.cpp.obj
+[4/22] Building CXX object CMakeFiles\NextView.dir\src\Workers\ScanWorker.cpp.obj
+[5/22] Building CXX object CMakeFiles\NextView.dir\src\main.cpp.obj
+[6/22] Building CXX object CMakeFiles\NextView.dir\NextView_autogen\mocs_compilation.cpp.obj
+[7/22] Building CXX object CMakeFiles\NextView.dir\src\Utils\CacheManager.cpp.obj
+[8/22] Building CXX object CMakeFiles\NextView.dir\src\Workers\CacheWorker.cpp.obj
+[9/22] Building CXX object CMakeFiles\NextView.dir\src\Utils\FFmpegHelper.cpp.obj
+[10/22] Building CXX object CMakeFiles\NextView.dir\src\UI\GlassWidget.cpp.obj
+[11/22] Building CXX object CMakeFiles\NextView.dir\src\UI\GlassNavBar.cpp.obj
+[12/22] Building CXX object CMakeFiles\NextView.dir\src\UI\ProjectCard.cpp.obj
+[13/22] Building CXX object CMakeFiles\NextView.dir\src\UI\ProjectListPage.cpp.obj
+[14/22] Building CXX object CMakeFiles\NextView.dir\src\UI\MainWindow.cpp.obj
+[15/22] Building CXX object CMakeFiles\NextView.dir\src\UI\BrowsePage.cpp.obj
+[16/22] Building CXX object CMakeFiles\NextView.dir\src\UI\MediaItemWidget.cpp.obj
+[17/22] Building CXX object CMakeFiles\NextView.dir\src\UI\WaterfallWidget.cpp.obj
+[18/22] Building CXX object CMakeFiles\NextView.dir\NextView_autogen\3YJK5W5UP7\qrc_resources.cpp.obj
+[19/22] Building CXX object CMakeFiles\NextView.dir\src\UI\SettingsPanel.cpp.obj
+[20/22] Building CXX object CMakeFiles\NextView.dir\src\UI\ImageViewer.cpp.obj
+[21/22] Building CXX object CMakeFiles\NextView.dir\src\UI\VideoPlayerDialog.cpp.obj
+[22/22] Linking CXX executable NextView.exe
+BUILD_OK
+C:\Users\20274\Documents\NextView\build\NextView.exe 64 bit, release executable
+Adding in plugin type generic for module: Qt6Gui
+Adding in plugin type iconengines for module: Qt6Gui
+Adding Qt6Svg for qsvgicon.dll from plugin type: iconengines
+Adding in plugin type imageformats for module: Qt6Gui
+Adding in plugin type multimedia for module: Qt6Multimedia
+Adding in plugin type networkinformation for module: Qt6Network
+Adding in plugin type platforms for module: Qt6Gui
+Adding in plugin type styles for module: Qt6Widgets
+Adding in plugin type tls for module: Qt6Network
+Skipping plugin qopensslbackend.dll. Use -force-openssl or specify -openssl-root if you want to use it.
+Direct dependencies: Qt6Core Qt6Gui Qt6Multimedia Qt6MultimediaWidgets Qt6Network Qt6Widgets
+All dependencies   : Qt6Core Qt6Gui Qt6Multimedia Qt6MultimediaWidgets Qt6Network Qt6Widgets
+To be deployed     : Qt6Core Qt6Gui Qt6Multimedia Qt6MultimediaWidgets Qt6Network Qt6Svg Qt6Widgets
+Updating Qt6Core.dll.
+Updating Qt6Gui.dll.
+Updating Qt6Multimedia.dll.
+Updating Qt6MultimediaWidgets.dll.
+Updating Qt6Network.dll.
+Updating Qt6Svg.dll.
+Updating Qt6Widgets.dll.
+Updating opengl32sw.dll.
+Updating D3Dcompiler_47.dll.
+Updating dxcompiler.dll.
+Updating dxil.dll.
+Updating avcodec-61.dll.
+Updating avformat-61.dll.
+Updating avutil-59.dll.
+Updating swresample-5.dll.
+Updating swscale-8.dll.
+Creating directory C:/Users/20274/Documents/NextView/build/generic.
+Updating qtuiotouchplugin.dll.
+Creating directory C:/Users/20274/Documents/NextView/build/iconengines.
+Updating qsvgicon.dll.
+Creating directory C:/Users/20274/Documents/NextView/build/imageformats.
+Updating qgif.dll.
+Updating qicns.dll.
+Updating qico.dll.
+Updating qjpeg.dll.
+Updating qsvg.dll.
+Updating qtga.dll.
+Updating qtiff.dll.
+Updating qwbmp.dll.
+Updating qwebp.dll.
+Creating directory C:/Users/20274/Documents/NextView/build/multimedia.
+Updating ffmpegmediaplugin.dll.
+Updating windowsmediaplugin.dll.
+Creating directory C:/Users/20274/Documents/NextView/build/networkinformation.
+Updating qnetworklistmanager.dll.
+Creating directory C:/Users/20274/Documents/NextView/build/platforms.
+Updating qwindows.dll.
+Creating directory C:/Users/20274/Documents/NextView/build/styles.
+Updating qmodernwindowsstyle.dll.
+Creating directory C:/Users/20274/Documents/NextView/build/tls.
+Updating qcertonlybackend.dll.
+Updating qschannelbackend.dll.
+Creating C:\Users\20274\Documents\NextView\build\translations...
+Creating qt_ar.qm...
+Creating qt_bg.qm...
+Creating qt_ca.qm...
+Creating qt_cs.qm...
+Creating qt_da.qm...
+Creating qt_de.qm...
+Creating qt_en.qm...
+Creating qt_es.qm...
+Creating qt_fa.qm...
+Creating qt_fi.qm...
+Creating qt_fr.qm...
+Creating qt_gd.qm...
+Creating qt_he.qm...
+Creating qt_hr.qm...
+Creating qt_hu.qm...
+Creating qt_it.qm...
+Creating qt_ja.qm...
+Creating qt_ka.qm...
+Creating qt_ko.qm...
+Creating qt_lg.qm...
+Creating qt_lv.qm...
+Creating qt_nl.qm...
+Creating qt_nn.qm...
+Creating qt_pl.qm...
+Creating qt_pt_BR.qm...
+Creating qt_ru.qm...
+Creating qt_sk.qm...
+Creating qt_tr.qm...
+Creating qt_uk.qm...
+Creating qt_zh_CN.qm...
+Creating qt_zh_TW.qm...
+DEPLOY_DONE

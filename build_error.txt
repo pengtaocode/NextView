@@ -1,0 +1,2 @@
+系统找不到指定的路径。
+Warning: Cannot find Visual Studio installation directory, VCINSTALLDIR is not set.
