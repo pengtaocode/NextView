@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QJsonObject>
 #include <QUuid>
+#include <QDir>
 #include <QFileInfo>
 
 /**
@@ -83,8 +84,8 @@ struct Project {
         Project p;
         p.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
         p.folderPath = folderPath;
-        // 默认项目名为文件夹名
-        p.name = QFileInfo(folderPath).fileName();
+        // 默认项目名为文件夹名（用 QDir::dirName 兼容末尾带 / 的 macOS 路径）
+        p.name = QDir(folderPath).dirName();
         if (p.name.isEmpty()) {
             p.name = folderPath;
         }

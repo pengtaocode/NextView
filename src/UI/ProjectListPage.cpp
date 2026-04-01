@@ -1,5 +1,6 @@
 #include "ProjectListPage.h"
 #include "ProjectManager.h"
+#include "AnimUtils.h"
 
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -273,12 +274,14 @@ ProjectListPage::ProjectListPage(QWidget* parent)
     m_addBtn->setFlat(true);
     m_addBtn->setCursor(Qt::PointingHandCursor);
     m_addBtn->setStyleSheet(navBtnStyle);
+    setupCustomStyledButton(m_addBtn);
     connect(m_addBtn, &QPushButton::clicked, this, &ProjectListPage::addProjectRequested);
 
     QPushButton* settingsBtn = new QPushButton("设置", this);
     settingsBtn->setFlat(true);
     settingsBtn->setCursor(Qt::PointingHandCursor);
     settingsBtn->setStyleSheet(navBtnStyle);
+    setupCustomStyledButton(settingsBtn);
     connect(settingsBtn, &QPushButton::clicked, this, &ProjectListPage::settingsRequested);
 
     m_navBar->addRightWidget(m_addBtn);

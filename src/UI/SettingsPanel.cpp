@@ -1,4 +1,5 @@
 #include "SettingsPanel.h"
+#include "AnimUtils.h"
 #include "ProjectManager.h"
 #include "CacheManager.h"
 #include "ConfirmDialog.h"
@@ -36,6 +37,7 @@ SettingsPanel::SettingsPanel(QWidget* parent)
         "color: #1C1C1E; padding: 5px 13px; border-radius: 14px; }"
         "QPushButton:hover { background: #E0E0E0; }"
     );
+    setupCustomStyledButton(backBtn);
     connect(backBtn, &QPushButton::clicked, this, &SettingsPanel::backRequested);
     m_navBar->addLeftWidget(backBtn);
 

@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QPainter>
 #include <QPainterPath>
+#include "AnimUtils.h"
 
 /**
  * @brief 统一风格的确认对话框
@@ -112,6 +113,8 @@ public:
         confirmBtn->setStyleSheet(mkStyle(confirmDestructive));
         cancelBtn->setCursor(Qt::PointingHandCursor);
         confirmBtn->setCursor(Qt::PointingHandCursor);
+        setupCustomStyledButton(cancelBtn);
+        setupCustomStyledButton(confirmBtn);
         cancelBtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         confirmBtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 

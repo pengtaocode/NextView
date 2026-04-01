@@ -5,7 +5,25 @@
 #include <QTimer>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPushButton>
 #include <functional>
+
+#ifdef Q_OS_MAC
+#include <QStyleFactory>
+#endif
+
+/**
+ * @brief macOS 下 QMacStyle 会接管 QPushButton 原生渲染并忽略 stylesheet 中的
+ *        border-radius，此函数在 macOS 下为该按钮单独设置 Fusion 风格，使自定义
+ *        样式（圆角、背景色等）正常生效；其他平台为空操作。
+ */
+inline void setupCustomStyledButton(QPushButton* btn) {
+#ifdef Q_OS_MAC
+    btn->setStyle(QStyleFactory::create("Fusion"));
+#else
+    Q_UNUSED(btn)
+#endif
+}
 
 /// 根据主屏刷新率返回动画帧间隔（ms），范围限定在 60–120 Hz
 inline int screenAnimInterval() {

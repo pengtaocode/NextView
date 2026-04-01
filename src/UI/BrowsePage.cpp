@@ -1,4 +1,5 @@
 #include "BrowsePage.h"
+#include "AnimUtils.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -51,6 +52,7 @@ BrowsePage::BrowsePage(QWidget* parent)
         "color: #1C1C1E; padding: 5px 13px; border-radius: 14px; }"
         "QPushButton:hover { background: #E0E0E0; }"
     );
+    setupCustomStyledButton(backBtn);
     connect(backBtn, &QPushButton::clicked, this, &BrowsePage::backRequested);
     m_navBar->addLeftWidget(backBtn);
 
@@ -80,6 +82,10 @@ QWidget* BrowsePage::createFilterButtons() {
     m_filterAll->setCursor(Qt::PointingHandCursor);
     m_filterImages->setCursor(Qt::PointingHandCursor);
     m_filterVideos->setCursor(Qt::PointingHandCursor);
+
+    setupCustomStyledButton(m_filterAll);
+    setupCustomStyledButton(m_filterImages);
+    setupCustomStyledButton(m_filterVideos);
 
     layout->addWidget(m_filterAll);
     layout->addWidget(m_filterImages);
