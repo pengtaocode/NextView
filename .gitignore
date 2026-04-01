@@ -1,0 +1,20 @@
+# 私钥 - 绝对不能提交
+keys/private_key.pem
+
+# 构建产物
+build/
+out/
+*.exe
+*.dll
+*.obj
+*.o
+
+# IDE
+.idea/
+.vscode/
+*.user
+
+# Qt
+*.pro.user
+CMakeCache.txt
+CMakeFiles/

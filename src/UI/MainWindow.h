@@ -101,4 +101,7 @@ private:
     QMap<QString, QList<MediaFile>> m_projectFiles;
     bool    m_darkMode;
     QString m_previewQuality;
+#ifdef Q_OS_WIN
+    bool    m_nativeMaximized = false;  // 由 WM_SIZE 维护，比 isMaximized() 更及时
+#endif
 };

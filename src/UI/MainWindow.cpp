@@ -12,6 +12,7 @@
 #include <QCloseEvent>
 #include <QSettings>
 #include <QThread>
+#include <QTimer>
 #include <QApplication>
 #include <QScreen>
 #include <QFile>
@@ -297,6 +298,15 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_settingsPanel, &SettingsPanel::backRequested, this, [this]() {
         m_stackedWidget->setCurrentIndex(m_prevPageIndex);
     });
+    connect(m_settingsPanel, &SettingsPanel::activationChanged, this, [this]() {
+        // 解除所有视频的锁定遮罩
+        m_browsePage->waterfallWidget()->markLockedVideos();
+        // 重启当前项目缓存，补全此前因限额跳过的视频预览
+        if (!m_cachingProjectId.isEmpty() && m_projectFiles.contains(m_cachingProjectId)) {
+            asyncStopCacheWorker();
+            startCaching(m_cachingProjectId, m_projectFiles[m_cachingProjectId]);
+        }
+    });
 
     connect(ProjectManager::instance(), &ProjectManager::projectAdded,
             m_projectListPage, &ProjectListPage::addProjectCard);
@@ -310,8 +320,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     // 加载设置
     QSettings settings("NextView", "NextView");
-    m_previewQuality = settings.value("preview/quality", "medium").toString();
-    QString appear = settings.value("appearance/mode", "system").toString();
+    m_previewQuality = settings.value("preview/quality", "high").toString();
+    QString appear = settings.value("appearance/mode", "dark").toString();
     if (appear == "dark") {
         m_darkMode = true;
         applyTheme(true);
@@ -511,6 +521,17 @@ void MainWindow::startScan(const QString& projectId) {
     connect(m_scanWorker, &ScanWorker::fileFound,       this, &MainWindow::onScanFileFound);
     connect(m_scanWorker, &ScanWorker::progressUpdated, this, &MainWindow::onScanProgress);
     connect(m_scanWorker, &ScanWorker::scanComplete,    this, &MainWindow::onScanComplete);
+    connect(m_scanWorker, &ScanWorker::scanError, this, [this](const QString& msg) {
+        qWarning() << "扫描失败：" << msg;
+        if (m_scanningProjectId.isEmpty()) return;
+        Project* p = ProjectManager::instance()->projectById(m_scanningProjectId);
+        if (p) {
+            p->scanState = Project::NotScanned;
+            p->scanFound = 0;
+            ProjectManager::instance()->updateProject(*p);
+        }
+        m_scanningProjectId.clear();
+    });
     m_scanWorker->start(QThread::LowPriority);
 }
 
@@ -768,7 +789,7 @@ void MainWindow::showEvent(QShowEvent* event) {
     applyRoundedCorners();
     // 窗口显示后强制更新装饰线宽度（初次布局完成后 statusBar 才有正确宽度）
     if (m_titleLine)
-        m_titleLine->setGeometry(0, GlassNavBar::NavBarHeight - 1, m_statusBar->width(), 1);
+        m_titleLine->setGeometry(0, GlassNavBar::NavBarHeight - 1, width(), 1);
 
     // 将所有已扫描但尚未建立搜索索引的项目加入后台索引队列
     for (const Project& p : ProjectManager::instance()->projects()) {
@@ -784,11 +805,16 @@ void MainWindow::resizeEvent(QResizeEvent* event) {
 
     // 更新装饰线宽度（随窗口宽度拉伸）
     if (m_titleLine)
-        m_titleLine->setGeometry(0, GlassNavBar::NavBarHeight - 1, m_statusBar->width(), 1);
+        m_titleLine->setGeometry(0, GlassNavBar::NavBarHeight - 1, width(), 1);
 
     // 更新缩放手柄位置（最大化时隐藏）
     const int b = 6, w = width(), h = height();
-    if (isMaximized()) {
+#ifdef Q_OS_WIN
+    const bool maximized = m_nativeMaximized;
+#else
+    const bool maximized = isMaximized();
+#endif
+    if (maximized) {
         for (auto* handle : m_resizeHandles) handle->hide();
     } else {
         for (auto* handle : m_resizeHandles) { handle->show(); handle->raise(); }
@@ -818,17 +844,32 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
 
         // 让客户区覆盖整个窗口（去除系统绘制的标题栏与边框留白）
         if (msg->message == WM_NCCALCSIZE && msg->wParam == TRUE) {
-            if (isMaximized()) {
-                // 最大化时限定到工作区，不遮挡任务栏
-                HMONITOR mon = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
-                MONITORINFO mi = {};
-                mi.cbSize = sizeof(mi);
-                GetMonitorInfo(mon, &mi);
-                auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(msg->lParam);
-                params->rgrc[0] = mi.rcWork;
-            }
+            auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(msg->lParam);
+            HMONITOR mon = MonitorFromWindow(msg->hwnd, MONITOR_DEFAULTTONEAREST);
+            MONITORINFO mi = {};
+            mi.cbSize = sizeof(mi);
+            GetMonitorInfo(mon, &mi);
+            // 用提议矩形与工作区比较判断最大化，避免依赖 isMaximized()（Aero Snap
+            // 还原时 Qt 状态滞后，会把还原后的小窗口错误地裁剪到工作区大小）
+            const RECT& r = params->rgrc[0];
+            bool isMax = (r.left  <= mi.rcWork.left  &&
+                          r.top   <= mi.rcWork.top   &&
+                          r.right >= mi.rcWork.right &&
+                          r.bottom >= mi.rcWork.bottom);
+            if (isMax)
+                params->rgrc[0] = mi.rcWork;  // 最大化：限定到工作区，不遮挡任务栏
             *result = 0;
             return true;
+        }
+
+        if (msg->message == WM_ERASEBKGND) {
+            // 阻止系统用白色擦除背景，避免拖拽调整窗口大小时新区域闪白
+            *result = 1;
+            return true;
+        }
+
+        if (msg->message == WM_SIZE) {
+            m_nativeMaximized = (msg->wParam == SIZE_MAXIMIZED);
         }
 
         if (msg->message == WM_NCHITTEST) {

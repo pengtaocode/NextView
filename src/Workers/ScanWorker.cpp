@@ -72,7 +72,7 @@ void ScanWorker::run() {
     QDirIterator it(
         m_folderPath,
         QDir::Files | QDir::Readable,
-        QDirIterator::Subdirectories | QDirIterator::FollowSymlinks
+        QDirIterator::Subdirectories  // 不跟随符号链接，避免循环导致无限扫描
     );
 
     while (it.hasNext() && !m_stopRequested) {

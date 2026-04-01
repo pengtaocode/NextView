@@ -59,6 +59,21 @@ MediaItemWidget::MediaItemWidget(const MediaFile& file, QWidget* parent)
     if (!dt.isValid()) dt = fi.lastModified();
     m_addedDateStr = dt.isValid() ? dt.date().toString("yyyy-MM-dd") : QString();
 
+    // 锁定遮罩缩略图缩放动效（250ms 内从 1.0 缓动到 1.06）
+    m_scaleTimer = new QTimer(this);
+    m_scaleTimer->setInterval(screenAnimInterval());
+    connect(m_scaleTimer, &QTimer::timeout, this, [this]() {
+        const float target = (m_previewLocked && m_hovered) ? 1.06f : 1.0f;
+        const float step   = 0.06f / 2.0f * m_scaleTimer->interval() / 1000.0f;
+        if (m_hoverScale < target)
+            m_hoverScale = qMin(m_hoverScale + step, target);
+        else
+            m_hoverScale = qMax(m_hoverScale - step, target);
+        if (qFuzzyCompare(m_hoverScale, target))
+            m_scaleTimer->stop();
+        update();
+    });
+
     // 文件名横向滚动定时器（hover 时按 40px/s 速度滚动，到头后重置循环）
     m_scrollTimer = new QTimer(this);
     m_scrollTimer->setInterval(screenAnimInterval());
@@ -94,6 +109,11 @@ void MediaItemWidget::setPreviewPath(const QString& path) {
 
 void MediaItemWidget::setDarkMode(bool dark) {
     m_darkMode = dark;
+    update();
+}
+
+void MediaItemWidget::setPreviewLocked(bool locked) {
+    m_previewLocked = locked;
     update();
 }
 
@@ -160,12 +180,21 @@ void MediaItemWidget::paintEvent(QPaintEvent* event) {
         int y = (r.height() - scaled.height()) / 2;
         painter.drawPixmap(x, y, scaled);
     } else if (m_hasThumbnail && !m_thumbnail.isNull()) {
-        // 绘制缩略图
+        // 绘制缩略图（锁定悬停时应用与 ProjectCard 一致的放大动效）
         QPixmap scaled = m_thumbnail.scaled(
             r.size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
         int x = (r.width()  - scaled.width())  / 2;
         int y = (r.height() - scaled.height()) / 2;
-        painter.drawPixmap(x, y, scaled);
+        if (m_hoverScale > 1.0f) {
+            painter.save();
+            painter.translate(r.width() / 2.0, r.height() / 2.0);
+            painter.scale(m_hoverScale, m_hoverScale);
+            painter.translate(-r.width() / 2.0, -r.height() / 2.0);
+            painter.drawPixmap(x, y, scaled);
+            painter.restore();
+        } else {
+            painter.drawPixmap(x, y, scaled);
+        }
     } else {
         // 占位符：深色模式黑色，浅色模式白色
         painter.fillRect(r, m_darkMode ? QColor(0, 0, 0) : QColor(255, 255, 255));
@@ -210,6 +239,20 @@ void MediaItemWidget::paintEvent(QPaintEvent* event) {
             painter.setPen(Qt::white);
             painter.drawText(bgRect, Qt::AlignCenter, duration);
         }
+    }
+
+    // 未激活超出预览配额：鼠标悬停时显示锁定提示遮罩
+    if (m_previewLocked && m_hovered && !m_isPlaying) {
+        painter.fillRect(r, QColor(0, 0, 0, 165));
+
+        QFont hintFont;
+        hintFont.setPixelSize(11);
+        hintFont.setWeight(QFont::Medium);
+        painter.setFont(hintFont);
+        painter.setPen(Qt::white);
+        painter.drawText(r.adjusted(8, 0, -8, 0),
+                         Qt::AlignCenter | Qt::TextWordWrap,
+                         "前往设置激活\n解锁视频预览");
     }
 
     // 底部单行信息：文件名（左）+ 日期（右），同色
@@ -266,7 +309,10 @@ void MediaItemWidget::paintEvent(QPaintEvent* event) {
 
 void MediaItemWidget::enterEvent(QEnterEvent* event) {
     Q_UNUSED(event)
-    if (m_file.type == MediaFile::Video)
+    m_hovered = true;
+    if (m_previewLocked)
+        m_scaleTimer->start();
+    if (m_file.type == MediaFile::Video && !m_previewLocked)
         m_hoverTimer->start();
 
     m_nameHovered = true;
@@ -285,6 +331,9 @@ void MediaItemWidget::enterEvent(QEnterEvent* event) {
 
 void MediaItemWidget::leaveEvent(QEvent* event) {
     Q_UNUSED(event)
+    m_hovered       = false;
+    if (m_previewLocked)
+        m_scaleTimer->start();
     m_nameHovered   = false;
     m_nameOverflows = false;
     m_scrollOffset  = 0.0f;

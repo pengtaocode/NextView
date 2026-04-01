@@ -1,4 +1,5 @@
 #include "WaterfallWidget.h"
+#include "LicenseManager.h"
 
 #include <QResizeEvent>
 #include <QFutureWatcher>
@@ -65,6 +66,20 @@ void WaterfallWidget::setFiles(const QList<MediaFile>& files) {
             return QImage(thumbPath);
         }));
     }
+
+    markLockedVideos();
+}
+
+void WaterfallWidget::markLockedVideos() {
+    bool activated = LicenseManager::instance()->isActivated();
+    int  videoCount = 0;
+    for (const MediaFile& f : m_allFiles) {
+        if (f.type != MediaFile::Video) continue;
+        videoCount++;
+        if (!m_widgets.contains(f.path)) continue;
+        bool locked = !activated && (videoCount > LicenseManager::FreeVideoPreviewLimit);
+        m_widgets[f.path]->setPreviewLocked(locked);
+    }
 }
 
 void WaterfallWidget::setFilter(FilterType type) {
@@ -100,12 +115,20 @@ void WaterfallWidget::clear() {
 
 void WaterfallWidget::updateThumbnail(const QString& filePath, const QString& thumbnailPath) {
     if (!m_widgets.contains(filePath)) return;
-    QPixmap pixmap(thumbnailPath);
-    if (!pixmap.isNull()) {
-        m_widgets[filePath]->setThumbnail(pixmap);
-        for (MediaFile& f : m_allFiles)
-            if (f.path == filePath) { f.thumbnailPath = thumbnailPath; break; }
-    }
+    for (MediaFile& f : m_allFiles)
+        if (f.path == filePath) { f.thumbnailPath = thumbnailPath; break; }
+
+    auto* watcher = new QFutureWatcher<QImage>(this);
+    connect(watcher, &QFutureWatcher<QImage>::finished, this,
+            [this, filePath, watcher]() {
+        QImage img = watcher->result();
+        watcher->deleteLater();
+        if (img.isNull() || !m_widgets.contains(filePath)) return;
+        m_widgets[filePath]->setThumbnail(QPixmap::fromImage(std::move(img)));
+    });
+    watcher->setFuture(QtConcurrent::run([thumbnailPath]() -> QImage {
+        return QImage(thumbnailPath);
+    }));
 }
 
 void WaterfallWidget::updatePreview(const QString& filePath, const QString& previewPath) {

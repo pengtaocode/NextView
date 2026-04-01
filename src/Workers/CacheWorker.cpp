@@ -1,6 +1,7 @@
 #include "CacheWorker.h"
 #include "CacheManager.h"
 #include "FFmpegHelper.h"
+#include "LicenseManager.h"
 
 #include <QImage>
 #include <QImageReader>
@@ -120,8 +121,8 @@ void VideoPreviewTask::run() {
         });
     }
 
-    // 生成视频预览
-    if (!prevDone && !w->isCancelled()) {
+    // 生成视频预览（未激活且超出限额的任务跳过此步骤）
+    if (!prevDone && m_generatePreview && !w->isCancelled()) {
         prevDone = FFmpegHelper::generatePreview(
             filePath, prevPath, w->m_quality, w->m_ffmpegThreads, &w->m_cancelled);
     }
@@ -206,8 +207,24 @@ void CacheWorker::startCaching(const QString& projectId,
              << "| 最大并发FFmpeg:" << maxVideoConcurrent
              << "| 每进程线程数:" << m_ffmpegThreads;
 
+    // ---- 未激活时计算已有视频预览数，确定本次可新增的预览配额 ----
+    bool activated = LicenseManager::instance()->isActivated();
+    int  previewBudget = INT_MAX;
+    if (!activated) {
+        int existing = 0;
+        for (const MediaFile& f : files) {
+            if (f.type == MediaFile::Video &&
+                QFile::exists(CacheManager::previewPath(projectId, f.path)))
+                existing++;
+        }
+        previewBudget = qMax(0, LicenseManager::FreeVideoPreviewLimit - existing);
+    }
+
     // ---- 只队列化尚未缓存的文件 ----
-    QList<MediaFile> imageWork, videoWork;
+    QList<MediaFile> imageWork;
+    QList<QPair<MediaFile, bool>> videoWork;  // (文件, 是否生成预览)
+    int previewsQueued = 0;
+
     for (const MediaFile& f : files) {
         if (m_cancelled.loadRelaxed()) break;
         if (f.type == MediaFile::Image) {
@@ -216,8 +233,12 @@ void CacheWorker::startCaching(const QString& projectId,
         } else if (f.type == MediaFile::Video) {
             bool needThumb   = !QFile::exists(CacheManager::thumbnailPath(projectId, f.path));
             bool needPreview = !QFile::exists(CacheManager::previewPath(projectId, f.path));
-            if (needThumb || needPreview)
-                videoWork.append(f);
+            bool canPreview  = needPreview && (previewsQueued < previewBudget);
+
+            if (needThumb || canPreview) {
+                videoWork.append({f, canPreview});
+                if (canPreview) previewsQueued++;
+            }
         }
     }
 
@@ -230,15 +251,16 @@ void CacheWorker::startCaching(const QString& projectId,
         return;
     }
 
-    qDebug() << "需缓存：图片" << imageWork.size() << "个，视频" << videoWork.size() << "个";
+    qDebug() << "需缓存：图片" << imageWork.size() << "个，视频" << videoWork.size()
+             << "个（预览配额：" << (activated ? -1 : previewBudget) << "）";
 
     for (const MediaFile& f : imageWork) {
         if (m_cancelled.loadRelaxed()) break;
         m_imagePool->start(new ThumbnailTask(this, f), 5);
     }
-    for (const MediaFile& f : videoWork) {
+    for (const auto& [f, genPreview] : videoWork) {
         if (m_cancelled.loadRelaxed()) break;
-        m_videoPool->start(new VideoPreviewTask(this, f), 1);
+        m_videoPool->start(new VideoPreviewTask(this, f, genPreview), 1);
     }
 }
 

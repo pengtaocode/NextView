@@ -16,10 +16,12 @@ set "INCLUDE=%MSVC%\include;%WINSDK%\Include\%SDKVER%\ucrt;%WINSDK%\Include\%SDK
 set "LIB=%MSVC%\lib\x64;%WINSDK%\Lib\%SDKVER%\ucrt\x64;%WINSDK%\Lib\%SDKVER%\um\x64"
 set "LIBPATH=%MSVC%\lib\x64"
 
+set "OPENSSL_ROOT_DIR=C:\Program Files\OpenSSL-Win64"
+
 echo Starting configure...
 if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 
-"%CMAKE_EXE%" -S "%SRC_DIR%" -B "%BUILD_DIR%" -G "Ninja" -DCMAKE_BUILD_TYPE=Release "-DCMAKE_PREFIX_PATH=%QT_DIR%" "-DCMAKE_CXX_COMPILER=%MSVC%\bin\Hostx64\x64\cl.exe" "-DCMAKE_MAKE_PROGRAM=%NINJA_EXE%"
+"%CMAKE_EXE%" -S "%SRC_DIR%" -B "%BUILD_DIR%" -G "Ninja" -DCMAKE_BUILD_TYPE=Release "-DCMAKE_PREFIX_PATH=%QT_DIR%" "-DCMAKE_CXX_COMPILER=%MSVC%\bin\Hostx64\x64\cl.exe" "-DCMAKE_MAKE_PROGRAM=%NINJA_EXE%" "-DOPENSSL_ROOT_DIR=%OPENSSL_ROOT_DIR%"
 if %errorlevel% neq 0 (
     echo CONFIGURE_FAILED
     exit /b 1

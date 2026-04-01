@@ -27,6 +27,7 @@ public:
     void setThumbnail(const QPixmap& pixmap);
     void setPreviewPath(const QString& path);
     void setDarkMode(bool dark);
+    void setPreviewLocked(bool locked);
 
     const MediaFile& mediaFile() const { return m_file; }
 
@@ -61,9 +62,15 @@ private:
 
     QPixmap m_currentFrame;   // 当前视频帧（paintEvent 直接绘制）
 
-    bool            m_darkMode   = false;
+    bool            m_darkMode       = false;
+    bool            m_previewLocked  = false; // 未激活且超出免费预览配额
+    bool            m_hovered        = false;
     LoadingOverlay* m_loadingOverlay = nullptr;
-    bool            m_isLoading  = false;
+    bool            m_isLoading      = false;
+
+    // 锁定遮罩缩略图缩放动效（与 ProjectCard 一致）
+    QTimer* m_scaleTimer  = nullptr;
+    float   m_hoverScale  = 1.0f;
 
     // 底部信息行
     QString   m_addedDateStr;     // 文件添加日期，格式 "yyyy-MM-dd"

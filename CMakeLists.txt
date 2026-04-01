@@ -14,7 +14,11 @@ find_package(Qt6 REQUIRED COMPONENTS
     Multimedia
     MultimediaWidgets
     Concurrent
+    Network
 )
+
+# Ed25519 验签 + AES-256-CBC 存储加密
+find_package(OpenSSL REQUIRED)
 
 # 源文件列表
 set(SOURCES
@@ -24,6 +28,7 @@ set(SOURCES
     src/Workers/CacheWorker.cpp
     src/Utils/CacheManager.cpp
     src/Utils/FFmpegHelper.cpp
+    src/Utils/LicenseManager.cpp
     src/UI/GlassWidget.cpp
     src/UI/GlassNavBar.cpp
     src/UI/MainWindow.cpp
@@ -48,6 +53,8 @@ set(HEADERS
     src/Workers/CacheWorker.h
     src/Utils/CacheManager.h
     src/Utils/FFmpegHelper.h
+    src/Utils/LicenseManager.h
+    src/UI/ActivationDialog.h
     src/UI/GlassWidget.h
     src/UI/GlassNavBar.h
     src/UI/MarqueeLabel.h
@@ -94,6 +101,8 @@ target_link_libraries(NextView PRIVATE
     Qt6::Multimedia
     Qt6::MultimediaWidgets
     Qt6::Concurrent
+    Qt6::Network
+    OpenSSL::Crypto
 )
 
 # Windows 平台设置

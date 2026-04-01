@@ -4,6 +4,9 @@
 SearchBar::SearchBar(QWidget* parent)
     : QWidget(parent)
 {
+    // 覆盖全局 QWidget { background } 规则，防止 resize 时深色背景闪入新区域
+    setStyleSheet("background: transparent;");
+
     QHBoxLayout* outerLayout = new QHBoxLayout(this);
     outerLayout->setContentsMargins(0, 0, 0, 0);
     outerLayout->setSpacing(0);
@@ -38,22 +41,23 @@ SearchBar::SearchBar(QWidget* parent)
         "}"
     );
 
-    // 清除按钮：圆形背景 + ✕ 图标
+    // 清除按钮：iOS/macOS 风格 — 中性灰圆形 + 白色 ✕
     m_clearBtn = new QPushButton("✕", m_inputContainer);
     m_clearBtn->setFlat(true);
-    m_clearBtn->setFixedSize(18, 18);
+    m_clearBtn->setFixedSize(16, 16);
     m_clearBtn->setCursor(Qt::PointingHandCursor);
     m_clearBtn->setStyleSheet(
         "QPushButton {"
         "  border: none;"
-        "  border-radius: 9px;"
-        "  background: rgba(60,60,67,0.25);"
+        "  border-radius: 8px;"
+        "  background: rgba(142,142,147,0.45);"
         "  color: white;"
         "  font-size: 9px;"
         "  font-weight: bold;"
-        "  padding: 0;"
+        "  padding: 0 0 1px 0;"
         "}"
-        "QPushButton:hover { background: rgba(60,60,67,0.45); }"
+        "QPushButton:hover   { background: rgba(142,142,147,0.7); }"
+        "QPushButton:pressed { background: rgba(142,142,147,0.9); }"
     );
     m_clearBtn->hide();
 

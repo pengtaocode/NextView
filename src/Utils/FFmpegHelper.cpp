@@ -158,6 +158,7 @@ bool FFmpegHelper::extractFrame(const QString& videoPath,
         "-ss", QString::number(positionSeconds, 'f', 2),
         "-i", videoPath,
         "-frames:v", "1",
+        "-vf", "scale=w=min(iw\\,1280):h=-2",  // 限制缩略图最大宽度，避免全分辨率图像占满内存
         "-q:v", "2",
         "-threads", "1",     // 限制内部线程，避免单进程占满 CPU
         "-loglevel", "quiet",
@@ -167,9 +168,9 @@ bool FFmpegHelper::extractFrame(const QString& videoPath,
 }
 
 int FFmpegHelper::qualityToWidth(const QString& quality) {
-    if (quality == "low")  return 240;
-    if (quality == "high") return 570;
-    return 320;
+    if (quality == "low")  return 480;
+    if (quality == "high") return 1080;
+    return 720;
 }
 
 bool FFmpegHelper::generatePreview(const QString& videoPath,
@@ -201,8 +202,8 @@ bool FFmpegHelper::generatePreview(const QString& videoPath,
     QStringList codecArgs = {
         "-threads", threads,
         "-c:v", "libx264",
-        "-crf", "28",
-        "-preset", "ultrafast",
+        "-crf", "7",
+        "-preset", "fast",
         "-tune", "fastdecode",
         "-pix_fmt", "yuv420p"
     };

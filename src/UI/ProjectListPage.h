@@ -90,6 +90,8 @@ private:
     // ── 搜索 ──────────────────────────────────────────────────────
     SearchBar*       m_searchBar      = nullptr;
     QWidget*         m_searchDropdown = nullptr;  // 绝对定位浮动下拉框
+    static constexpr int MaxDropdownItems = 7;
+    QPushButton*     m_dropdownBtns[MaxDropdownItems] = {};  // 预建按钮，避免反复创建
     QScrollArea*     m_searchScrollArea = nullptr;  // 浮动覆盖，搜索激活时显示
     WaterfallWidget* m_searchResults  = nullptr;
     bool             m_searchActive   = false;

@@ -75,10 +75,12 @@ private:
 
 class VideoPreviewTask : public QRunnable {
 public:
-    VideoPreviewTask(CacheWorker* worker, const MediaFile& file)
-        : m_worker(worker), m_file(file) { setAutoDelete(true); }
+    VideoPreviewTask(CacheWorker* worker, const MediaFile& file, bool generatePreview = true)
+        : m_worker(worker), m_file(file), m_generatePreview(generatePreview)
+    { setAutoDelete(true); }
     void run() override;
 private:
     CacheWorker* m_worker;
     MediaFile    m_file;
+    bool         m_generatePreview; // 未激活且超出限额时为 false，仅生成缩略图
 };

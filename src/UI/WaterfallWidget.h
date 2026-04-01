@@ -26,6 +26,9 @@ public:
     void updatePreview(const QString& filePath, const QString& previewPath);
     QList<MediaFile> filteredFiles() const;
 
+    // 根据当前激活状态标记超出免费配额的视频控件为锁定（悬停显示提示遮罩）
+    void markLockedVideos();
+
 signals:
     void itemClicked(const MediaFile& file);
 

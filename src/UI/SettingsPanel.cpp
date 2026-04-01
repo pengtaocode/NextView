@@ -2,6 +2,8 @@
 #include "ProjectManager.h"
 #include "CacheManager.h"
 #include "ConfirmDialog.h"
+#include "ActivationDialog.h"
+#include "LicenseManager.h"
 
 #include <QPainter>
 #include <QResizeEvent>
@@ -67,7 +69,45 @@ SettingsPanel::SettingsPanel(QWidget* parent)
         return line;
     };
 
-    // ---- 外观（第一项） ----
+    // ---- 激活（第一项）----
+    contentLayout->addWidget(createSectionTitle("激活"));
+
+    // 状态行：文字 + 激活按钮（未激活时显示）
+    QWidget* activationRow = new QWidget(this);
+    QHBoxLayout* activationRowLayout = new QHBoxLayout(activationRow);
+    activationRowLayout->setContentsMargins(0, 0, 0, 0);
+    activationRowLayout->setSpacing(6);
+
+    m_activationStatusLabel = new QLabel(this);
+    m_activationStatusLabel->setWordWrap(false);
+    m_activationStatusLabel->setStyleSheet("font-size: 13px;");
+
+    m_activateBtn = new QPushButton("激活", this);
+    m_activateBtn->setFlat(true);
+    m_activateBtn->setCursor(Qt::PointingHandCursor);
+    m_activateBtn->setStyleSheet(
+        "QPushButton { background: transparent; border: none; color: #0A84FF;"
+        "  font-size: 13px; font-weight: bold; padding: 0; }"
+        "QPushButton:hover { color: #3399FF; }");
+
+    connect(m_activateBtn, &QPushButton::clicked, this, [this]() {
+        ActivationDialog dlg(m_darkMode, this);
+        if (dlg.exec() == QDialog::Accepted) {
+            refreshActivationStatus();
+            emit activationChanged();
+        }
+    });
+
+    activationRowLayout->addWidget(m_activationStatusLabel);
+    activationRowLayout->addWidget(m_activateBtn);
+    activationRowLayout->addStretch();
+    contentLayout->addWidget(activationRow);
+
+    refreshActivationStatus();
+
+    contentLayout->addWidget(makeLine());
+
+    // ---- 外观 ----
     contentLayout->addWidget(createSectionTitle("外观"));
 
     QButtonGroup* appearGroup = new QButtonGroup(this);
@@ -77,7 +117,7 @@ SettingsPanel::SettingsPanel(QWidget* parent)
     appearGroup->addButton(m_appearSystem);
     appearGroup->addButton(m_appearLight);
     appearGroup->addButton(m_appearDark);
-    m_appearSystem->setChecked(true);
+    m_appearDark->setChecked(true);
 
     QVBoxLayout* appearLayout = new QVBoxLayout();
     appearLayout->setSpacing(10);
@@ -98,13 +138,13 @@ SettingsPanel::SettingsPanel(QWidget* parent)
     contentLayout->addWidget(createSectionTitle("预览质量"));
 
     QButtonGroup* qualityGroup = new QButtonGroup(this);
-    m_qualityLow    = new QRadioButton("低（240p）- 节省空间", this);
-    m_qualityMedium = new QRadioButton("中（480p）- 推荐", this);
-    m_qualityHigh   = new QRadioButton("高（720p）- 最佳体验", this);
+    m_qualityLow    = new QRadioButton("低（480p）- 节省空间", this);
+    m_qualityMedium = new QRadioButton("中（720p）- 推荐", this);
+    m_qualityHigh   = new QRadioButton("高（1080p）- 最佳体验", this);
     qualityGroup->addButton(m_qualityLow);
     qualityGroup->addButton(m_qualityMedium);
     qualityGroup->addButton(m_qualityHigh);
-    m_qualityMedium->setChecked(true);
+    m_qualityHigh->setChecked(true);
 
     QVBoxLayout* qualityLayout = new QVBoxLayout();
     qualityLayout->setSpacing(10);
@@ -186,12 +226,12 @@ QLabel* SettingsPanel::createSectionTitle(const QString& title) {
 
 void SettingsPanel::loadSettings() {
     QSettings settings("NextView", "NextView");
-    QString quality = settings.value("preview/quality", "medium").toString();
+    QString quality = settings.value("preview/quality", "high").toString();
     if (quality == "low") m_qualityLow->setChecked(true);
     else if (quality == "high") m_qualityHigh->setChecked(true);
     else m_qualityMedium->setChecked(true);
 
-    QString appear = settings.value("appearance/mode", "system").toString();
+    QString appear = settings.value("appearance/mode", "dark").toString();
     if (appear == "light") m_appearLight->setChecked(true);
     else if (appear == "dark") m_appearDark->setChecked(true);
     else m_appearSystem->setChecked(true);
@@ -291,6 +331,24 @@ void SettingsPanel::setDarkMode(bool dark) {
     m_navBar->setDarkMode(dark);
     m_aboutLabel->setStyleSheet(
         QString("color: %1; font-size: 13px;").arg(dark ? "#FFFFFF" : "#1C1C1E"));
+    refreshActivationStatus();
+}
+
+void SettingsPanel::refreshActivationStatus() {
+    bool activated = LicenseManager::instance()->isActivated();
+    if (activated) {
+        m_activationStatusLabel->setText("✓ 已激活，视频预览数量无限制");
+        m_activationStatusLabel->setStyleSheet("color: #34C759; font-size: 13px;");
+        m_activateBtn->hide();
+    } else {
+        m_activationStatusLabel->setText(
+            QString("每个项目仅预览前 %1 个视频")
+                .arg(LicenseManager::FreeVideoPreviewLimit));
+        m_activationStatusLabel->setStyleSheet(
+            QString("color: %1; font-size: 13px;")
+                .arg(m_darkMode ? "#FFFFFF" : "#1C1C1E"));
+        m_activateBtn->show();
+    }
 }
 
 void SettingsPanel::resizeEvent(QResizeEvent* event) {

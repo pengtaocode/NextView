@@ -13,6 +13,7 @@
 #include <QTimer>
 #include <QApplication>
 #include <QFocusEvent>
+#include <QMouseEvent>
 #include "AnimUtils.h"
 #include <QPainter>
 #include <QFontMetrics>
@@ -296,6 +297,18 @@ ProjectListPage::ProjectListPage(QWidget* parent)
     QVBoxLayout* dropLayout = new QVBoxLayout(m_searchDropdown);
     dropLayout->setContentsMargins(0, 4, 0, 4);
     dropLayout->setSpacing(0);
+
+    // 预建固定数量的按钮：避免每次输入时创建/销毁子控件触发 Windows 焦点事件
+    for (int i = 0; i < MaxDropdownItems; ++i) {
+        QPushButton* btn = new QPushButton(m_searchDropdown);
+        btn->setFlat(true);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setFixedHeight(36);
+        btn->hide();
+        dropLayout->addWidget(btn);
+        m_dropdownBtns[i] = btn;
+    }
+
     m_searchDropdown->hide();
     m_searchDropdown->raise();
 
@@ -314,9 +327,10 @@ ProjectListPage::ProjectListPage(QWidget* parent)
         m_glowOverlay->start();
     });
 
-    // 鼠标移入按钮时光晕提前消失
+    // 鼠标移入按钮时光晕提前消失；应用级过滤器用于点击外部时隐藏下拉框
     m_addBtn->installEventFilter(this);
     m_searchBar->lineEdit()->installEventFilter(this);
+    QApplication::instance()->installEventFilter(this);
 
     reloadProjects();
 }
@@ -465,37 +479,35 @@ void ProjectListPage::updateSearchDropdown(const QString& query) {
 void ProjectListPage::rebuildDropdownItems(
     const QList<QPair<QString,MediaFile>>& matches, const QString& query)
 {
-    // 清空旧条目
-    QLayout* lay = m_searchDropdown->layout();
-    QLayoutItem* item;
-    while ((item = lay->takeAt(0)) != nullptr) {
-        if (item->widget()) item->widget()->deleteLater();
-        delete item;
-    }
+    // 直接复用预建按钮，不创建/销毁任何子控件，彻底避免 Windows 焦点事件
+    QString textColor = m_darkMode ? "#F2F2F7" : "#1C1C1E";
+    QString btnStyle =
+        QString("QPushButton { text-align: left; padding: 0 14px; border: none; "
+                "  background: transparent; font-size: 12px; font-weight: bold; color: %1; }"
+                "QPushButton:hover { background: rgba(128,128,128,0.1); }").arg(textColor);
 
-    for (const auto& [relPath, file] : matches) {
-        int matchPos = relPath.indexOf(query, Qt::CaseInsensitive);
-        // 只显示匹配处及之后的文字
-        QString display = (matchPos >= 0) ? relPath.mid(matchPos) : relPath;
+    for (int i = 0; i < MaxDropdownItems; ++i) {
+        QPushButton* btn = m_dropdownBtns[i];
+        if (i < matches.size()) {
+            const auto& [relPath, file] = matches[i];
+            int matchPos = relPath.indexOf(query, Qt::CaseInsensitive);
+            QString display = (matchPos >= 0) ? relPath.mid(matchPos) : relPath;
 
-        QPushButton* btn = new QPushButton(display, m_searchDropdown);
-        btn->setFlat(true);
-        btn->setCursor(Qt::PointingHandCursor);
-        btn->setFixedHeight(36);
-        QString textColor = m_darkMode ? "#F2F2F7" : "#1C1C1E";
-        btn->setStyleSheet(
-            QString("QPushButton { text-align: left; padding: 0 14px; border: none; "
-                    "  background: transparent; font-size: 12px; font-weight: bold; color: %1; }"
-                    "QPushButton:hover { background: rgba(128,128,128,0.1); }").arg(textColor)
-        );
-        MediaFile capturedFile = file;
-        connect(btn, &QPushButton::clicked, this, [this, capturedFile]() {
-            // 绝对路径填入输入框，展示该文件卡片
-            m_searchBar->setTextSilent(capturedFile.path);
-            hideDropdown();
-            showSingleFile(capturedFile);
-        });
-        lay->addWidget(btn);
+            btn->setText(display);
+            btn->setStyleSheet(btnStyle);
+
+            // 断开旧信号，重新绑定新文件
+            disconnect(btn, &QPushButton::clicked, nullptr, nullptr);
+            MediaFile capturedFile = file;
+            connect(btn, &QPushButton::clicked, this, [this, capturedFile]() {
+                m_searchBar->setTextSilent(capturedFile.path);
+                hideDropdown();
+                showSingleFile(capturedFile);
+            });
+            btn->show();
+        } else {
+            btn->hide();
+        }
     }
     m_searchDropdown->adjustSize();
 }
@@ -689,24 +701,21 @@ bool ProjectListPage::eventFilter(QObject* obj, QEvent* event) {
     }
 
     if (obj == m_searchBar->lineEdit()) {
-        if (event->type() == QEvent::FocusOut) {
-            auto* fe = static_cast<QFocusEvent*>(event);
-            if (fe->reason() != Qt::PopupFocusReason) {
-                QTimer::singleShot(150, this, [this]() {
-                    // 焦点在下拉框内（点击候选项）或回到输入框（继续输入）时不隐藏
-                    QWidget* fw = QApplication::focusWidget();
-                    if (!fw
-                        || (!m_searchDropdown->isAncestorOf(fw)
-                            && fw != m_searchBar->lineEdit()))
-                        hideDropdown();
-                });
-            }
-        } else if (event->type() == QEvent::FocusIn) {
-            // 重新获得焦点时，根据当前内容恢复下拉框
+        // 重新获得焦点时，根据当前内容恢复下拉框
+        if (event->type() == QEvent::FocusIn) {
             const QString txt = m_searchBar->text();
             if (!txt.isEmpty())
                 updateSearchDropdown(txt);
         }
+    }
+
+    // 应用级鼠标点击：点击搜索栏和下拉框之外的区域时隐藏下拉框
+    if (event->type() == QEvent::MouseButtonPress && m_searchDropdown->isVisible()) {
+        QPoint gp = static_cast<QMouseEvent*>(event)->globalPosition().toPoint();
+        bool inSearchBar = m_searchBar->rect().contains(m_searchBar->mapFromGlobal(gp));
+        bool inDropdown  = m_searchDropdown->rect().contains(m_searchDropdown->mapFromGlobal(gp));
+        if (!inSearchBar && !inDropdown)
+            hideDropdown();
     }
 
     return QWidget::eventFilter(obj, event);
@@ -726,11 +735,13 @@ void ProjectListPage::resizeEvent(QResizeEvent* event) {
     m_searchScrollArea->setGeometry(0, GlassNavBar::NavBarHeight,
                                     width(), height() - GlassNavBar::NavBarHeight);
 
-    // 搜索栏动态宽度 = 窗口宽度 × 0.6
+    // 搜索栏动态宽度 = 窗口宽度 × 0.4
     if (m_searchBar) {
         int barW = static_cast<int>(width() * 0.4);
         m_navBar->setLeftMaxWidth(barW);
         m_searchBar->setFixedWidth(barW);
+        // 立即触发同步布局，避免 navBar 背景已更宽但子控件几何未更新导致的裁剪闪烁
+        m_navBar->layout()->activate();
     }
 
     // 重新定位已显示的下拉框
